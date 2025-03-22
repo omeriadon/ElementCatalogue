@@ -166,6 +166,9 @@ struct PeriodicTableView: View {
                     selectedElement = nil
                 }
                 return .handled
+            } else if isFloating {
+                closeFloatingWindow()
+                return .handled
             }
             return .ignored
         }
