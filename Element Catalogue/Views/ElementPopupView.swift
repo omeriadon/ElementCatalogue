@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import SceneKit
 
 struct ElementPopupView: View {
     let element: ElementData
@@ -217,7 +218,7 @@ struct ElementPopupView: View {
     }
     
     private func elementImages() -> some View {
-        VStack(alignment: .leading, spacing: 15) { // Change to leading alignment for consistency
+        VStack(alignment: .leading, spacing: 15) {
             let imageURLs = getImageURLs(for: element)
             
             if imageLoadAttempt < imageURLs.count, let imageUrl = imageURLs[imageLoadAttempt] {

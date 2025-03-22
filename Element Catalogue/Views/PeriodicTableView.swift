@@ -195,18 +195,12 @@ struct PeriodicTableView: View {
                     .padding(.top, 1)
                     .padding(.trailing, 2)
                 
-                // Element symbol centered
-                Spacer()
+                // Element symbol - make bigger
                 Text(element.symbol)
-                    .font(.system(size: 14, weight: .bold))
-                Spacer()
+                    .font(.system(size: 20, weight: .bold)) // Increased from 14 to 20
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
-                // Add name at bottom if there's room
-                Text(element.name)
-                    .font(.system(size: 6))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .padding(.bottom, 1)
+                // Remove element name at bottom
             }
             .foregroundColor(.white)
             .frame(width: cellSize - 4, height: cellSize - 4)

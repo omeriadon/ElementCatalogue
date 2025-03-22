@@ -23,22 +23,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Make sure Settings menu is available
-        let settingsMenu = NSMenu(title: "Settings")
+        // Create main menu items programmatically
+        setupMainMenu()
+    }
+    
+    private func setupMainMenu() {
+        // Get the main menu
+        guard let mainMenu = NSApplication.shared.mainMenu else { return }
         
-        // Add New Window menu item
-        let newWindowItem = NSMenuItem(
-            title: "New Window",
-            action: #selector(createNewWindow),
-            keyEquivalent: "n"
-        )
-        newWindowItem.keyEquivalentModifierMask = .command
-        settingsMenu.addItem(newWindowItem)
+        // Remove standard menu items that we don't want
+        for title in ["File", "Window", "View", "Help"] {
+            if let item = mainMenu.items.first(where: { $0.title == title }) {
+                mainMenu.removeItem(item)
+            }
+        }
         
-        // Add separator
-        settingsMenu.addItem(NSMenuItem.separator())
-        
-        // Add clear bookmarks item (existing)
+        // Create Tools menu
+        let toolsMenu = NSMenu(title: "Tools")
         let clearBookmarksItem = NSMenuItem(
             title: "Clear All Bookmarks", 
             action: #selector(clearAllBookmarks), 
@@ -50,46 +51,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let trashIcon = NSImage(systemSymbolName: "trash", accessibilityDescription: "Clear Bookmarks")
         clearBookmarksItem.image = trashIcon
         
-        settingsMenu.addItem(clearBookmarksItem)
+        toolsMenu.addItem(clearBookmarksItem)
         
-        // Add the Settings menu
-        if let mainMenu = NSApplication.shared.mainMenu {
-            let settingsMenuItem = NSMenuItem(title: "Settings", action: nil, keyEquivalent: "")
-            settingsMenuItem.submenu = settingsMenu
-            mainMenu.insertItem(settingsMenuItem, at: 1)
-        }
-        
-        // Make app windows floating by default
-        if let window = NSApplication.shared.windows.first {
-            configureWindowAsFloating(window)
-        }
-    }
-    
-    @MainActor
-    @objc func createNewWindow() {
-        // Create a new window without relying on UIKit-specific APIs
-        let newWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-        
-        // Create the SwiftUI content view
-        let contentView = ContentView()
-            .environment(\.modelContext, Element_CatalogueApp.shared.sharedModelContainer.mainContext)
-        
-        // Set the window content
-        newWindow.contentViewController = NSHostingController(rootView: contentView
-            .background(.ultraThinMaterial)
-            .preferredColorScheme(.dark)
-        )
-        
-        // Configure the window
-        newWindow.title = "Element Catalogue"
-        newWindow.center()
-        configureWindowAsFloating(newWindow)
-        newWindow.makeKeyAndOrderFront(nil)
+        let toolsMenuItem = NSMenuItem(title: "Tools", action: nil, keyEquivalent: "")
+        toolsMenuItem.submenu = toolsMenu
+        mainMenu.insertItem(toolsMenuItem, at: 2)
     }
     
     @objc func clearAllBookmarks() {
@@ -98,10 +64,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     // Helper function to configure a window as floating
-    private func configureWindowAsFloating(_ window: NSWindow) {
-        window.level = .floating // Make the window float above others
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary] // Visible on all spaces
-        window.isMovableByWindowBackground = true // Allow dragging from any point
+    func configureWindowAsFloating(_ window: NSWindow) {
+        window.level = .floating
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        window.isMovableByWindowBackground = true
     }
 }
 
@@ -114,6 +80,7 @@ extension Notification.Name {
 struct Element_CatalogueApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     static var shared: Element_CatalogueApp!
+    @Environment(\.openWindow) private var openWindow
     
     init() {
         Element_CatalogueApp.shared = self
@@ -135,17 +102,34 @@ struct Element_CatalogueApp: App {
     }()
     
     var body: some Scene {
-        WindowGroup {
+        WindowGroup("Element Catalogue", id: "main") {
             ContentView()
                 .background(.ultraThinMaterial)
                 .preferredColorScheme(.dark)
                 .modelContainer(sharedModelContainer)
+                .onAppear {
+                    // Make window floating when it appears
+                    DispatchQueue.main.async {
+                        NSApp.windows.forEach { window in
+                            appDelegate.configureWindowAsFloating(window)
+                        }
+                    }
+                }
         }
-        .windowStyle(.hiddenTitleBar) // Clean look without title bar
-        .defaultSize(width: 800, height: 600) // Fixed size window
+        .windowStyle(.hiddenTitleBar) 
+        .defaultSize(width: 800, height: 600)
         
-        // Adding commands to modify window behavior
+        // Add menu bar commands
         .commands {
+            // New Window command in top-level menu
+            CommandMenu("File") {
+                Button("New Window") {
+                    openWindow(id: "main")
+                }
+                .keyboardShortcut("n", modifiers: .command)
+            }
+            
+            // Replace other window groups
             CommandGroup(replacing: .windowSize) { }
             CommandGroup(replacing: .windowList) { }
             CommandGroup(replacing: .windowArrangement) { }

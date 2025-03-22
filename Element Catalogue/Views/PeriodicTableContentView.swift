@@ -39,9 +39,14 @@ struct PeriodicTableContentView: View {
                     let color = ElementColors.colorForElement(element).opacity(0.8)
                     context.fill(Path(roundedRect: rect, cornerRadius: 6), with: .color(color))
                     
-                    // Draw element symbol
+                    // Draw element symbol - make it bigger
                     let textPoint = CGPoint(x: xPos + cellSize / 2, y: yPos + cellSize / 2)
-                    context.draw(Text(element.symbol).font(.system(size: 14, weight: .bold)).foregroundColor(.white), at: textPoint)
+                    context.draw(
+                        Text(element.symbol)
+                            .font(.system(size: 20, weight: .bold)) // Increased from 14 to 20
+                            .foregroundColor(.white), 
+                        at: textPoint
+                    )
                 }
                 
                 // Similar drawing for lanthanides and actinides could be implemented
